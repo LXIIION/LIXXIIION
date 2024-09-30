@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor de Música</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Reloj en la esquina superior izquierda */
+        .clock {
+            position: fixed;
+            top: 10px;
+            left: 20px;
+            font-size: 2em;
+            background-color: #1db954;
+            padding: 15px 25px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .music-player {
+            width: 300px;
+            margin: 80px auto;
+            background-color: #181818;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .album-cover {
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        .track-info {
+            margin-top: 15px;
+        }
+
+        .track-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .track-artist {
+            font-size: 1em;
+            color: #b3b3b3;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+        }
+
+        .controls button {
+            background-color: #1db954;
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .controls button:disabled {
+            background-color: #666;
+        }
+
+        /* Cola de canciones */
+        .track-queue {
+            position: fixed;
+            top: 10px;
+            right: 20px;
+            width: 200px;
+            background-color: #1c1c1c;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .queue-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #1db954;
+        }
+
+        .track-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 500px; /* Aumentar altura máxima */
+            overflow-y: auto;
+        }
+
+        .track-list li {
+            padding: 10px;
+            background-color: #282828;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .track-list li:hover {
+            background-color: #1db954;
+        }
+
+        .track-list li.active {
+            background-color: #1db954;
+        }
+    </style>
+</head>
+<body>
+    <!-- Reloj en la esquina superior izquierda -->
+    <div class="clock" id="clock">00:00:00</div>
+
+    <!-- Contenedor principal del reproductor -->
+    <div class="music-player">
+        <!-- Imagen de la portada del álbum -->
+        <img id="album-cover" src="1.jpeg" class="album-cover">
+        
+        <!-- Información de la pista -->
+        <div class="track-info">
+            <div id="track-title" class="track-title">Alumbre</div>
+            <div id="track-artist" class="track-artist">Artista: Milo J</div>
+        </div>
+
+        <!-- Reproductor de audio -->
+        <audio id="audio-player" controls>
+            <source id="audio-source" src="https://www.dropbox.com/scl/fi/rbamygxsmtpngefn0qdbr/ALUMBRE.mp3?rlkey=fi8y390akhkv66o70b48wwttq&raw=1" type="audio/mpeg">
+            Tu navegador no soporta la etiqueta de audio.
+        </audio>
+
+        <!-- Controles personalizados -->
+        <div class="controls">
+            <button id="prevBtn" disabled>⏮</button>
+            <button id="playPauseBtn">⏯</button>
+            <button id="nextBtn">⏭</button>
+            <button id="repeatBtn">🔁</button>
+            <button id="shuffleBtn">🔀</button>
+        </div>
+    </div>
+
+    <!-- Cola de canciones a la derecha -->
+    <div class="track-queue">
+        <div class="queue-title">Cola de Canciones</div>
+        <ul id="track-list" class="track-list">
+            <!-- Las canciones se añadirán aquí dinámicamente -->
+        </ul>
+    </div>
+
+    <script>
+        // Información de las canciones
+        const tracks = [
+            {
+                title: "Alumbre",
+                artist: "Milo J",
+                cover: "1.jpeg",
+                src: "https://www.dropbox.com/scl/fi/rbamygxsmtpngefn0qdbr/ALUMBRE.mp3?rlkey=fi8y390akhkv66o70b48wwttq&raw=1"
+            },
+            {
+                title: "Eléctrica",
+                artist: "Tiago PZK",
+                cover: "t.jpeg",
+                src: "https://www.dropbox.com/scl/fi/ngjfdxbrj0c4b4wlzhhvk/El-ctrica.mp3?rlkey=vdcysw1ge1akwh6duccg0ackn&raw=1"
+            },
+            {
+                title: "Plan A",
+                artist: "Paulo Londra",
+                cover: "a.jpeg",
+                src: "https://www.dropbox.com/scl/fi/cseytux7pzshsmy86l5cf/Plan-A.mp3?rlkey=wisy4uwwl8j9svmrxv0v1thof&raw=1"
+            },
+            {
+                title: "Buen Día Portacion De Rostro",
+                artist: "Milo J",
+                cover: "m.jpeg",
+                src: "https://www.dropbox.com/scl/fi/tvdhgnoyf07npk9nkzwv3/buen-d-a-portaci-n-de-rostro.mp3?rlkey=2rmj5hnays9macxkvgpdsr18p&raw=1"
+            },
+            {
+                title: "Sincérate",
+                artist: "Milo J",
+                cover: "1.jpeg",
+                src: "https://www.dropbox.com/scl/fi/lkoqjh4gs7wfkmlem5veg/SINCERA-TE.mp3?rlkey=azs9shbms2qibrd59eoio52yy&raw=1"
+            },
+            {
+                title: "Starboy",
+                artist: "The Weeknd",
+                cover: "we.jpeg",
+                src: "https://www.dropbox.com/scl/fi/5pn6wep0o3qy4uc2w88yu/Starboy.mp3?rlkey=0n35rcpqmxwqcnm9ab7lc0a1r&raw=1"
+            },
+            {
+                title: "The Hills",
+                artist: "The Weeknd",
+                cover: "w.jpeg",
+                src: "https://www.dropbox.com/scl/fi/lhl9irp06gdu4vwxmvxjk/The-Hills.mp3?rlkey=d7k5tppll52q7v6ncho28arp0&raw=1"
+            },
+            {
+                title: "Ríos de Sal",
+                artist: "Tiago PZK",
+                cover: "t.jpeg",
+                src: "https://www.dropbox.com/scl/fi/2rr7uzux6c1ouowfi35w0/R-os-de-Sal.mp3?rlkey=flqqrqy2isyw4rqfuamlepn8j&st=tyxyv1nq&dl=1"
+            },
+            {
+                title: "Posdata",
+                artist: "Paulo Londra",
+                cover: "Posdata.jpeg",
+                src: "https://www.dropbox.com/scl/fi/n2f65uwpzm2jtt119wk9n/Posdata_.mp3?rlkey=epqj4vvo3itjx2bf2f298ynld&st=vw2mda3e&dl=1"
+            },
+            // Nuevas pistas
+            {
+                title: "Meet You At The Graveyard",
+                artist: "Cleffy",
+                cover: "meet you.jpeg",
+                src: "https://www.dropbox.com/scl/fi/4mclqts7timxsi51nbx6l/Meet-you-at-the-Graveyard.mp3?rlkey=eqtqf16woy47a53208lvlyx3y&st=9fx3hou1&dl=1"
+            },
+            {
+                title: "No Soy Eterno",
+                artist: "Milo J",
+                cover: "6.jpeg",
+                src: "https://www.dropbox.com/scl/fi/mok8c91xqrwqli573wi2v/No-soy-Eterno.mp3?rlkey=0lvelwlei02b3dya5ea3v7n7c&st=w3sx4hjo&dl=1"
+            },
+            {
+                title: "DOM1NGO",
+                artist: "Milo J",
+                cover: "1.jpeg",
+                src: "https://www.dropbox.com/scl/fi/ec0yiwbsbw3d2g04af6cn/DOM1NGO.mp3?rlkey=swzr6akvgpepx2fw7rh2myqqq&st=f8b7nyc9&dl=1"
+            },
+            {
+                title: "Pincesa",
+                artist: "Paulo Londra",
+                cover: "4.jpeg",
+                src: "https://www.dropbox.com/scl/fi/p909hvaclxjtol5sof078/Princesa.mp3?rlkey=jntifyp7tjl8sg0dnkzk8s5hg&st=7oz6ltt5&dl=1"
+            },
+            {
+                title: "Paracaidas",
+                artist: "Paulo Londra",
+                cover: "3.jpeg",
+                src: "https://www.dropbox.com/scl/fi/tbi4bmq7ywf0hqxfspzh2/Paraca-das.mp3?rlkey=djqpjns71jfiwjs00q3c4j98m&st=dzyac4f7&dl=1"
+            },
+            // Aquí puedes agregar más pistas
+            {
+                title: "Memory Reboot x3",
+                artist: "VOJ",
+                cover: "7.jpeg",
+                src: "https://www.dropbox.com/scl/fi/6er7vbzgzs931ayhz3wph/ME.mp3?rlkey=q36mgsh6hzirm1uft4nw5pd2b&st=4niq3mry&dl=1"
+            },
+            {
+                title: "Fruto",
+                artist: "Milo J",
+                cover: "6.jpeg",
+                src: "https://www.dropbox.com/scl/fi/nko0fs58td2sk0p6qj8y0/Fruto.mp3?rlkey=gq7xlp567hcxbbh851h156puo&st=9r2bg5ch&dl=1"
+            },
+            {
+                title: "M.A.I",
+                artist: "Milo J",
+                cover: "1.jpeg",
+                src: "https://www.dropbox.com/scl/fi/qq7otbzp9zcdrbk84m47z/M.A.I.mp3?rlkey=rt4gugucuo1sd4gg8qbcul4k3&st=f2gk1adw&dl=1"
+            },
+            {
+                title: "Demsiado Loco",
+                artist: "Paulo Londra",
+                cover: "p.jpeg",
+                src: "https://www.dropbox.com/scl/fi/wqx1xzio32zi6otorn6h6/Demasiado-Loco.mp3?rlkey=i8mgab5l5n0sgi9lffzwpcjnp&st=8xntljk0&dl=1"
+            },
+            {
+                title: "Maldita Abusadora",
+                artist: "Paulo Londra",
+                cover: "p.jpeg",
+                src: "https://www.dropbox.com/scl/fi/zrpzm95hz6vtsc82jcw81/Maldita-Abusadora.mp3?rlkey=hxfmhvwlxp7dzprqltj6r7akk&st=ql9wbwtf&dl=1"
+            },
+            // Nuevas pistas agregadas
+            {
+                title: "Penas De Antaño",
+                artist: "Milo J",
+                cover: "6.jpeg",
+                src: "https://www.dropbox.com/scl/fi/qhz9i3gmg2dl9xggvfj70/Penas-de-Anta-o.mp3?rlkey=6wbus9unctghw9m6w566cbrx8&st=88j0opp1&dl=1"
+            },
+            {
+                title: "Rara Vez",
+                artist: "Milo J",
+                cover: "2.jpeg",
+                src: "https://www.dropbox.com/scl/fi/vcclz0mvwk2ddqchl649b/Rara-Vez.mp3?rlkey=k233f5wyq2x2c68vngxqk4xvb&st=48wz2lct&dl=1"
+            },
+            {
+                title: "Tal Vez",
+                artist: "Paulo Londra",
+                cover: "p.jpeg",
+                src: "https://www.dropbox.com/scl/fi/f16kfvoc66nxfwgac624f/Tal-Vez.mp3?rlkey=ktmvcrhsimvhg22lmv0ssy35c&st=2lop1yii&dl=1"
+            },
+            {
+                title: "Tell Me",
+                artist: "Marshmello",
+                cover: "ma.jpeg",
+                src: "https://www.dropbox.com/scl/fi/2mu05k4d3rec22p507dxs/Tell-Me.mp3?rlkey=hvjqglhb26fe8r19j1xvqnr7m&st=j2pq5z9i&dl=1"
+            },
+            {
+                title: "Toy En El Mic",
+                artist: "Milo J",
+                cover: "6.jpeg",
+                src: "https://www.dropbox.com/scl/fi/0mify0ziabguac04c214r/Toy-en-el-Mic.mp3?rlkey=g6gjftcn3bwxlsiro1lucr52m&st=3rmy0876&dl=1"
+            },
+            // Nuevas pistas adicionales
+            {
+                title: "Hablando De Love",
+                artist: "Tiago PZK",
+                cover: "t.jpeg",
+                src: "https://www.dropbox.com/scl/fi/wt8n7t3ck0etpqv6gz4sf/Hablando-De-Love.mp3?rlkey=pw810x8co8lhpcvizp5u374ao&st=n0rdpka0&dl=1"
+            },
+            {
+                title: "Rincon",
+                artist: "Milo J",
+                cover: "r.jpeg",
+                src: "https://www.dropbox.com/scl/fi/onqy05scu2dxgbkxxg5gf/Rinc-n.mp3?rlkey=mu3skq1a2uw4p89qxi9cwaq3d&st=4oqrm4jh&dl=1"
+            },
+            {
+                title: "Como Yo",
+                artist: "Tiago PZK",
+                cover: "como.jpeg",
+                src: "https://www.dropbox.com/scl/fi/8v69tgd3mcp4692k56pac/Como-Yo-_.mp3?rlkey=bk9z4ffc77s1bf5r0kzs1imrz&st=66aukhm7&dl=1"
+            },
+            {
+                title: "Numb",
+                artist: "Marshmello",
+                cover: "numb.jpeg",
+                src: "https://www.dropbox.com/scl/fi/fvgpwjit5cqwy13lni1wn/Numb.mp3?rlkey=7a5diinfh9bm4vkqemyl6u0kt&st=01ikzqjb&dl=1"
+            },
+            {
+                title: "Track 5",
+                artist: "Artist 5",
+                cover: "cover5.jpeg",
+                src: "https://link-to-track5.mp3"
+            },
+        ];
+
+        let currentTrackIndex = 0;
+        const audioPlayer = document.getElementById("audio-player");
+        const audioSource = document.getElementById("audio-source");
+        const trackTitle = document.getElementById("track-title");
+        const trackArtist = document.getElementById("track-artist");
+        const albumCover = document.getElementById("album-cover");
+        const trackList = document.getElementById("track-list");
+
+        // Función para cargar la pista actual
+        function loadTrack(index) {
+            const track = tracks[index];
+            audioSource.src = track.src;
+            trackTitle.textContent = track.title;
+            trackArtist.textContent = "Artista: " + track.artist;
+            albumCover.src = track.cover;
+            audioPlayer.load();
+            updateTrackList();
+        }
+
+        // Función para actualizar la cola de canciones
+        function updateTrackList() {
+            trackList.innerHTML = "";
+            tracks.forEach((track, index) => {
+                const listItem = document.createElement("li");
+                listItem.textContent = `${track.title} - ${track.artist}`;
+                listItem.className = index === currentTrackIndex ? "active" : "";
+                listItem.addEventListener("click", () => {
+                    currentTrackIndex = index;
+                    loadTrack(currentTrackIndex);
+                    audioPlayer.play();
+                });
+                trackList.appendChild(listItem);
+            });
+        }
+
+        // Función para reproducir o pausar
+        document.getElementById("playPauseBtn").addEventListener("click", () => {
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+                document.getElementById("playPauseBtn").textContent = "⏸"; // Cambiar a "pausa"
+            } else {
+                audioPlayer.pause();
+                document.getElementById("playPauseBtn").textContent = "⏯"; // Cambiar a "reproducir"
+            }
+        });
+
+        // Función para la pista anterior
+        document.getElementById("prevBtn").addEventListener("click", () => {
+            if (currentTrackIndex > 0) {
+                currentTrackIndex--;
+                loadTrack(currentTrackIndex);
+                audioPlayer.play();
+            }
+        });
+
+        // Función para la siguiente pista
+        document.getElementById("nextBtn").addEventListener("click", () => {
+            if (currentTrackIndex < tracks.length - 1) {
+                currentTrackIndex++;
+                loadTrack(currentTrackIndex);
+                audioPlayer.play();
+            }
+        });
+
+        // Función para repetir la pista
+        let repeat = false;
+        document.getElementById("repeatBtn").addEventListener("click", () => {
+            repeat = !repeat;
+            document.getElementById("repeatBtn").style.backgroundColor = repeat ? "#22ed14" : "#1db954";
+        });
+
+        // Función para mezclar la cola de canciones
+        let shuffle = false;
+        document.getElementById("shuffleBtn").addEventListener("click", () => {
+            shuffle = !shuffle;
+            document.getElementById("shuffleBtn").style.backgroundColor = shuffle ? "#22ed14" : "#1db954";
+        });
+
+        // Función para avanzar a la siguiente pista cuando termine la actual
+        audioPlayer.addEventListener("ended", () => {
+            if (repeat) {
+                audioPlayer.currentTime = 0;
+                audioPlayer.play();
+            } else if (shuffle) {
+                currentTrackIndex = Math.floor(Math.random() * tracks.length);
+                loadTrack(currentTrackIndex);
+                audioPlayer.play();
+            } else {
+                if (currentTrackIndex < tracks.length - 1) {
+                    currentTrackIndex++;
+                    loadTrack(currentTrackIndex);
+                    audioPlayer.play();
+                }
+            }
+        });
+
+        // Reloj en tiempo real
+        setInterval(() => {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById("clock").textContent = timeString;
+        }, 1000);
+
+        // Cargar la primera pista al inicio
+        loadTrack(currentTrackIndex);
+    </script>
+</body>
+</html>
